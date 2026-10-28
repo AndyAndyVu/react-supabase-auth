@@ -1,7 +1,8 @@
-import { Form, Link } from "react-router";
-import supabase from "../lib/supabase";
+import { Form, Link, redirect, useActionData } from "react-router";
+import { supabase } from "../lib/supabase";
 
 export default function Register() {
+  const actionData = useActionData()
   return (
     <div className="auth-container">
       <div className="auth-card">
@@ -46,7 +47,7 @@ export default function Register() {
               placeholder="Re-enter your password"
             />
           </div>
-
+          {actionData?.error && <div className="error-message">{actionData.error}</div>}
           <button type="submit" className="btn-primary">
             Create Account
           </button>
@@ -60,12 +61,38 @@ export default function Register() {
   );
 }
 
-export async function clientAction ({ request }) {
+export async function clientAction({ request }) {
   const formData = await request.formData();
   const email = formData.get("email");
   const password = formData.get("password");
-  
-  const result = await supabase.auth.signUp({ email, password });
-  console.log(result)
+  const confirmPassword = formData.get("confirmPassword");
+
+  //  Tjek passwords først
+
+  if (!email || !password || !confirmPassword) {
+    return {error: "alle disse 3 ting er required"};
+  }
+
+  if (password !== confirmPassword) {
+    return { error: "Passwords do not match" };
+  }
+
+   if (password.length < 6) {
+    return { error: "Password must be at least 6 characters" };
+  }
+
+  //  Opret kun brugeren, hvis passwords matcher
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  //  Send brugeren til login
+  return redirect("/login?registered=true");
 }
+  
 
