@@ -1,4 +1,5 @@
 import { Form, Link } from "react-router";
+import supabase from "../lib/supabase";
 
 export default function Register() {
   return (
@@ -58,3 +59,13 @@ export default function Register() {
     </div>
   );
 }
+
+export async function clientAction ({ request }) {
+  const formData = await request.formData();
+  const email = formData.get("email");
+  const password = formData.get("password");
+  
+  const result = await supabase.auth.signUp({ email, password });
+  console.log(result)
+}
+
