@@ -1,6 +1,20 @@
-import { Form, Link } from "react-router";
-
+import {
+  Form,
+  Link,
+  redirect,
+  useActionData,
+  useNavigation,
+  useSearchParams,
+} from "react-router";
+import { supabase } from "../lib/supabase";
 export default function Login() {
+  const actionData = useActionData();
+  const navigation = useNavigation();
+  const isSubmitting = navigation.state === "submitting";
+
+  const [searchParams] = useSearchParams();
+  const justRegistered = searchParams.get("registered") === "true";
+
   return (
     <div className="auth-container">
       <div className="auth-card">
@@ -31,7 +45,12 @@ export default function Login() {
               placeholder="Your password"
             />
           </div>
-
+        {justRegistered && (
+  <div className="success-message">Account created successfully! Please log in.</div>
+)}
+{actionData?.error && (
+        <div className="error-message">{actionData.error}</div>
+      )}
           <button type="submit" className="btn-primary">
             Log In
           </button>
@@ -43,4 +62,23 @@ export default function Login() {
       </div>
     </div>
   );
+}
+
+export async function clientAction( { request }) {
+  const formData = await request.formData();
+  const email = formData.get("email");
+  const password = formData.get("password");
+
+  if (!email || !password) {
+    return {error: "email and password are required"};
+  }
+
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
+  return { error: error.message };
+  }
+
+    return redirect("/");
+
 }
